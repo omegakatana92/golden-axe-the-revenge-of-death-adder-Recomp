@@ -1,8 +1,17 @@
 # Third-party notices
 
-This project builds on the System 32 decompilation lineage by cheviman and on MAME/ymfm reference code.
+This project builds on the System 32 decompilation lineage by **cheviman** and on MAME/ymfm reference code.
 The upstream copyright notices and license texts are kept in the files and in the `LICENSE-*` files at the
-repository root.
+repository root. See [CREDITS.md](CREDITS.md) for the full credit list.
+
+## cheviman / arcade-decomp
+
+- **Author:** cheviman — <https://github.com/cheviman>
+- **Toolkit:** [arcade-decomp](https://github.com/cheviman/arcade-decomp), BSD-3-Clause
+- `tools/core/` is a copy of that toolkit (commit `140ce2d` at the time of writing).
+- The V60/V70 and Z80 frontends, decompiler, translator, analysis and checks used to produce this port are
+  his work. The System 32 runtime structure was adapted from the SegaSonic, OutRunners and Alien 3: The Gun
+  decompilation projects in the same lineage.
 
 ## arcade-decomp and segasonic-decomp / outrunners-decomp
 

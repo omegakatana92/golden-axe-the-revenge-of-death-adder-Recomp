@@ -152,7 +152,7 @@ exit /b %ERRORLEVEL%
     New-Item -ItemType Directory -Force $release | Out-Null
     Copy-Item "$bin\GoldenAxe2.exe" $release -Force
     Copy-Item "C:\msys64\mingw64\bin\SDL2.dll" $release -Force
-    Copy-Item "$root\README.md", "$root\LICENSE", "$root\THIRD_PARTY_NOTICES.md" $release -Force
+    Copy-Item "$root\README.md", "$root\LICENSE", "$root\CREDITS.md", "$root\THIRD_PARTY_NOTICES.md" $release -Force
     @"
 Golden Axe: The Revenge of Death Adder (native Windows build)
 =============================================================
@@ -173,7 +173,7 @@ Run GoldenAxe2.exe. Controls are in README.md. The game writes ga2.eeprom beside
     $stage = Join-Path $root "build\source-stage\GoldenAxe2"
     if (Test-Path (Join-Path $root "build\source-stage")) { Remove-Item (Join-Path $root "build\source-stage") -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
-    $items = @("README.md", "LICENSE", "ROM_ANALYSIS.md", "BUILD_STATUS.md",
+    $items = @("README.md", "LICENSE", "CREDITS.md", "ROM_ANALYSIS.md", "BUILD_STATUS.md",
         "COMPATIBILITY.md", "TEST_RESULTS.md", "THIRD_PARTY_NOTICES.md", "symbols.txt", "sound_symbols.txt",
         "build_windows.ps1", "build_appimage.sh",
         "LICENSE-arcade-decomp-BSD-3-Clause.txt", "LICENSE-MAME-BSD-3-Clause.txt",

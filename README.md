@@ -152,6 +152,18 @@ docs/                 analysis, protection, compatibility and build notes
   the board's memories, exactly where the original reads them. That is why the ROM set is required at
   runtime even though the CPU code is native.
 
+## Credits
+
+This project is built directly on **[cheviman](https://github.com/cheviman)'s
+[arcade-decomp](https://github.com/cheviman/arcade-decomp)** — the V60/V70 and Z80 decompiler, analysis,
+translation and reference lineage in `tools/core/`, under BSD-3-Clause. The System 32 runtime structure was
+adapted from the same lineage (SegaSonic, OutRunners and the Alien 3: The Gun recompilation). Thank you,
+cheviman.
+
+Also credited: **MAMEdev and contributors** for the V60/Z80/System 32 video/I-O/RF5C68 reference cores,
+and **Aaron Giles and ymfm contributors** for the YM3438 model. Full attribution is in
+[CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Legal
 
 - New project code is under the **PolyForm Noncommercial License 1.0.0**; see [LICENSE](LICENSE).

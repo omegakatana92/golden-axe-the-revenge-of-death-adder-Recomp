@@ -1,5 +1,9 @@
 # Program analysis and implementation notes
 
+This port is built on **[cheviman](https://github.com/cheviman)'s
+[arcade-decomp](https://github.com/cheviman/arcade-decomp)** (BSD-3-Clause): the V60/V70 and Z80 frontends,
+decompiler, translator and analysis tools, and the System 32 reference lineage. See `CREDITS.md`.
+
 ## What the runtime is
 
 ```

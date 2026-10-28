@@ -56,7 +56,7 @@ cp packaging/appimage/goldenaxe2.desktop "$APPDIR/usr/share/applications/"
 cp packaging/appimage/goldenaxe2.desktop "$APPDIR/"
 cp packaging/appimage/goldenaxe2.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/"
 cp packaging/appimage/goldenaxe2.png "$APPDIR/"
-cp README.md LICENSE THIRD_PARTY_NOTICES.md ROM_ANALYSIS.md BUILD_STATUS.md "$APPDIR/usr/share/doc/goldenaxe2/"
+cp README.md LICENSE CREDITS.md THIRD_PARTY_NOTICES.md ROM_ANALYSIS.md BUILD_STATUS.md "$APPDIR/usr/share/doc/goldenaxe2/"
 
 # SDL2 and the few libraries an AppImage may safely carry; libc and the graphics driver are the host's.
 cp -L "$(pkg-config --variable=libdir sdl2)/libSDL2-2.0.so.0" "$APPDIR/usr/lib/" 2>/dev/null || \
