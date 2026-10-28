@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Golden Axe: The Revenge of Death Adder
+GenericName=Arcade game
+Comment=Native Sega System 32 recompilation (ROM required)
+Exec=GoldenAxe2
+Icon=goldenaxe2
+Categories=Game;ArcadeGame;
+Terminal=false
+StartupNotify=true

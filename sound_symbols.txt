@@ -1,0 +1,14 @@
+# Golden Axe: The Revenge of Death Adder (MAME set 'ga2') - Z80 sound program symbols
+#
+# Addresses and names only. The analysis starts at the reset and interrupt vectors; more entry points
+# are named as the driver is reversed.
+0000  file  main
+0000  func  sound_reset
+0038  func  sound_irq
+110E  jumps sound_command_table 32
+10AC  via   sound_command_table
+04A8  jumps sound_table_04A8 32
+049E  via   sound_table_04A8
+09A0  jumps sound_table_09A0 128
+075B  via   sound_table_09A0
+0075  loop  sound_main_loop

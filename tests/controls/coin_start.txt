@@ -1,0 +1,18 @@
+# Golden Axe: The Revenge of Death Adder - boot, coin, start and a short play session.
+# Frames are 60 Hz. Controls are active low; each press is held for the given number of frames.
+60  press coin1 4
+90  press start1 4
+150 press p1_button1 6
+180 press p1_button1 6
+220 press p1_button1 6
+260 press p1_button1 6
+300 hold p1_right
+360 release p1_right
+380 press p1_button1 8
+420 hold p1_right
+480 release p1_right
+500 press p1_button1 8
+560 press p1_button2 8
+620 press p1_button1 8
+700 press p1_button3 8
+900 end

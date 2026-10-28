@@ -1,0 +1,19 @@
+#!/bin/sh
+# AppRun for Golden Axe: The Revenge of Death Adder.
+#
+# The AppImage contains the game's native code, the System 32 board model and SDL2. The original ROM
+# set is not included: put ga2.zip beside the AppImage, in ./rom beside it, or in
+# ~/.local/share/GoldenAxe2/. GA2_ROM may also point at the folder that holds it.
+HERE=$(dirname "$(readlink -f "$0")")
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+if [ -z "$GA2_ROM" ]; then
+    APPIMAGE_DIR=$(dirname "$(readlink -f "$APPIMAGE" 2>/dev/null || echo "$0")")
+    if [ -f "$APPIMAGE_DIR/ga2.zip" ] || [ -d "$APPIMAGE_DIR/rom" ]; then
+        export GA2_ROM="$APPIMAGE_DIR"
+    elif [ -f "$HOME/.local/share/GoldenAxe2/ga2.zip" ]; then
+        export GA2_ROM="$HOME/.local/share/GoldenAxe2"
+    fi
+fi
+
+exec "$HERE/usr/bin/GoldenAxe2" "$@"

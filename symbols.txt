@@ -1,0 +1,15 @@
+# Golden Axe: The Revenge of Death Adder (MAME set 'ga2', World Rev B) - V60 program symbols
+#
+# Addresses and names only: no game data lives in this file.
+# Format:  ADDRESS  KIND  NAME  [LAYOUT]   # comment
+#   KIND: func = function entry, code = code label, data = data label
+#
+# The first pass records only what the translation scaffold and the analysis need. More names are added
+# as the program is reversed; see docs/ANALYSIS.md.
+
+# The V60's interrupt vector table; boot loads SBR with 0x100000 (LDPR at 0x100506).
+100000  data  vector_table       # 256 x 32-bit entries
+
+# The frame wait: 0x20AC08 bit 0 is the VBLANK handler's answer.
+133505  code  frame_wait_loop
+13350D  code  frame_wait_done
