@@ -66,11 +66,17 @@ with the supplied ROM copied to `GoldenAxe2-Recomp\rom\ga2.zip`.
 5. **P3/P4 scripted input test**: the i8255 path is implemented but not yet covered by a four-player
    reference scenario.
 
-## Not done (authorization required)
+## Published
 
-- No `git init`, commit, tag or push. The repository is ready to be created and pushed when the owner
-  authorizes it.
-- No release artifact was uploaded anywhere.
+- Repository: <https://github.com/omegakatana92/golden-axe-the-revenge-of-death-adder-Recomp>
+- Release: <https://github.com/omegakatana92/golden-axe-the-revenge-of-death-adder-Recomp/releases/tag/v0.1.0>
+- Assets: Windows x64 zip, Steam Deck AppImage, source zip, SHA256SUMS.
+- The repository contains no ROM, BIOS, generated V60 C, decompiled sound C, CMake file or build tree.
+
+## Not done
+
+- Full-game playthrough, four-player session on physical hardware, and the sound-dispatcher fix remain.
+- No release artifact was uploaded anywhere except the project's own GitHub release page.
 
 ## Rebuild commands
 
