@@ -13,13 +13,19 @@
 
 ## Known limitations
 
-1. **Sound command dispatch.** The Z80 driver is decompiled and runs, but the two command dispatchers
-   `sound_0473` and `sound_1094` rely on a return address only the stack knows. Their generated C returns
-   after a handler instead of updating the command-stream pointer exactly as the original. The result is a
-   sound-state divergence from frame 24 onward and some effects/commands may repeat or be skipped. All
-   other sound functions are decompiled normally. See `TEST_RESULTS.md`.
-2. **State-hash transients.** Video is frame-exact on the 3,000-frame run, but work RAM/video RAM state
-   hashes differ on 172 frames. These are off-screen or scratch values; no visible difference was found.
+1. **Sound fidelity.** The native Z80 driver is decompiled and runs; audio is produced and sustained. The
+   two command dispatchers `sound_0473` and `sound_1094` needed a post-pass
+   (`tools/fix_sound_dispatch.py`) to follow the continuation address the original pushes on the stack,
+   because the decompiler's CFG cannot see it. With that pass the game is no longer silent, but the sound
+   board's sample/state hashes still differ from MAME's Z80 on some frames (235 of 300 in the first
+   scripted run). The window/release build therefore uses the **reference sound board** by default
+   (`GA2_SOUND_REFERENCE=ON`): the original Z80 program on MAME's Z80 core with MAME's RF5C68 and ymfm's
+   YM3438. That backend is emulated and reference-accurate in level/content; it produces exactly 800
+   samples per 60 Hz frame at 48 kHz. The native backend remains selectable with
+   `-DGA2_SOUND_REFERENCE=OFF`. The long-term fix is a Z80 return-address model in the decompiler.
+2. **State-hash transients.** Video is frame-exact on the 3,000-frame runs, but work RAM/video RAM state
+   hashes differ on 172 frames of the scripted run. These are off-screen or scratch values; no visible
+   difference was found.
 3. **Full-game validation.** The run covers the first 50 seconds with one character. Later stages, bosses,
    the ending and 2/3/4-player sessions have not been played to completion.
 4. **Analog board.** MAME lists an A/D board (`837-7968`) for the hardware family, but `ga2`'s inputs are

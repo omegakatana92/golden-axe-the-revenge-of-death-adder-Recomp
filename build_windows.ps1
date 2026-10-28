@@ -112,6 +112,8 @@ try {
     Write-Host "== sound program =="
     & $python tools\decompile_sound.py
     if ($LASTEXITCODE -ne 0) { throw "sound decompilation failed" }
+    & $python tools\fix_sound_dispatch.py
+    if ($LASTEXITCODE -ne 0) { throw "sound dispatch fix failed" }
 
     Write-Host "== game =="
     cmake -S . -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -152,6 +154,11 @@ exit /b %ERRORLEVEL%
     New-Item -ItemType Directory -Force $release | Out-Null
     Copy-Item "$bin\GoldenAxe2.exe" $release -Force
     Copy-Item "C:\msys64\mingw64\bin\SDL2.dll" $release -Force
+    foreach ($dll in "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll") {
+        $source = Join-Path $bin $dll
+        if (-not (Test-Path $source)) { $source = "C:\msys64\mingw64\bin\$dll" }
+        if (Test-Path $source) { Copy-Item $source $release -Force }
+    }
     Copy-Item "$root\README.md", "$root\LICENSE", "$root\CREDITS.md", "$root\THIRD_PARTY_NOTICES.md" $release -Force
     @"
 Golden Axe: The Revenge of Death Adder (native Windows build)
@@ -181,7 +188,7 @@ Run GoldenAxe2.exe. Controls are in README.md. The game writes ga2.eeprom beside
         "tools\core", "tools\reference", "tools\ga2_rom.py", "tools\game_profile.py",
         "tools\verify_rom.py", "tools\recompile.py", "tools\decompile.py", "tools\decompile_sound.py",
         "tools\disassemble.py", "tools\check_structure.py", "tools\coverage.py", "tools\noise_report.py",
-        "tools\write_cmake.py", "tools\calls_extra.txt", "tools\traces")
+        "tools\write_cmake.py", "tools\calls_extra.txt", "tools\traces", "tools\fix_sound_dispatch.py")
     foreach ($item in $items) {
         $source = Join-Path $root $item
         if (Test-Path $source) {

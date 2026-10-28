@@ -115,8 +115,10 @@ interrupt `0x0038`; the main loop is `0x0075`; four jump tables were identified 
 
 The decompiler's stack check flags the two command dispatchers `sound_0473` and `sound_1094` because they
 push a return address and jump through a table whose handlers return to it; the CFG cannot see a return
-address that only the stack knows. They are allowed to be emitted, and the generated C is built. Their
-behaviour is the remaining sound-fidelity work item (`COMPATIBILITY.md`).
+address that only the stack knows. They are allowed to be emitted, and `tools/fix_sound_dispatch.py` then
+rewrites just those two generated functions to run the original continuation (increment DE, store the
+command-stream pointer for `sound_0473`, loop). That makes the driver produce sustained audio; sample-level
+fidelity against MAME is still being improved (`COMPATIBILITY.md`).
 
 `runtime/src/sound_cpu.c` gives each original basic block its board time; the YM3438 and RF5C68 are native
 C libraries. `s32ref --sound-timing build/sound/timing.txt` runs MAME's Z80 with the same per-block timing

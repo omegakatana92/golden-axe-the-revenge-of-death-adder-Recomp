@@ -20,6 +20,9 @@
  */
 #include "internal.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 /* The Z80 interrupt line follows the highest vector with an unmasked input pending; vector N puts
    2 x N on the bus */
 static void update_sound_irq(void)
@@ -91,6 +94,15 @@ uint8_t s32_z80_in(uint8_t port)
 
 void s32_z80_out(uint8_t port, uint8_t data)
 {
+	static int debug = -1;
+	if (debug < 0) debug = getenv("GA2_AUDIO_DEBUG") != NULL;
+	if (debug)
+	{
+		static int writes[16];
+		const int group = (port >> 4) & 0xf;
+		if (writes[group]++ < 8)
+			fprintf(stderr, "sound: out %02X = %02X\n", port, data);
+	}
 	switch (port & 0xf0)
 	{
 		case 0x80:

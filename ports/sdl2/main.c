@@ -24,6 +24,9 @@
 #include "s32/program.h"
 #include "s32/video.h"
 #include "sound/chips.h"
+#ifdef GA2_SOUND_REFERENCE
+#include "game/sound_reference.h"
+#endif
 
 #include <SDL.h>
 
@@ -50,6 +53,8 @@ static SDL_GameController *controllers[PLAYERS];
 static bool full_screen;
 static bool smooth = true;
 static bool square_pixels;             /* F4: 416x224 native pixels instead of the arcade 4:3 monitor */
+static int output_rate = OUTPUT_RATE;  /* the rate SDL actually opened */
+static int audio_peak;                 /* GA2_AUDIO_DEBUG: loudest sample since the last report */
 static uint64_t next_frame;
 static char eeprom_path[1024];
 static uint64_t smoke_frames;          /* --smoke-test: run this many frames and exit */
@@ -64,6 +69,10 @@ typedef struct resampler
 } resampler;
 
 static resampler chips[3];
+#ifdef GA2_SOUND_REFERENCE
+static resampler mixed;
+static FILE *sound_raw;                 /* GA2_SOUND_RAW: 48 kHz stereo s16le, for tests */
+#endif
 
 /* ---- files ---- */
 
@@ -368,19 +377,106 @@ static void sample_at(const resampler *chip, double position, double out[2])
 
 static void drop_used(resampler *chip)
 {
-	const size_t used = (size_t)chip->position;
+	size_t used = (size_t)chip->position;
 
 	if (!used)
 		return;
+	if (used > chip->count)
+		used = chip->count;
 	memmove(chip->samples, chip->samples + used * 2, (chip->count - used) * 2 * sizeof(int32_t));
 	chip->count -= used;
 	chip->position -= (double)used;
 }
 
+#ifdef GA2_SOUND_REFERENCE
+static void keep16(resampler *chip, const int16_t *samples, size_t count)
+{
+	if (chip->count + count > chip->capacity)
+	{
+		chip->capacity = (chip->count + count) * 2;
+		chip->samples = (int32_t *)realloc(chip->samples, chip->capacity * 2 * sizeof(int32_t));
+	}
+	for (size_t index = 0; index < count * 2; index++)
+		chip->samples[chip->count * 2 + index] = samples[index];
+	chip->count += count;
+}
+
+static void sample_at_hold(const resampler *chip, double position, double out[2])
+{
+	size_t index = (size_t)position;
+
+	if (chip->count == 0)
+	{
+		out[0] = out[1] = 0.0;
+		return;
+	}
+	if (index >= chip->count)
+		index = chip->count - 1;
+	if (index + 1 >= chip->count)
+	{
+		out[0] = chip->samples[index * 2];
+		out[1] = chip->samples[index * 2 + 1];
+		return;
+	}
+	{
+		const double fraction = position - (double)index;
+
+		for (int side = 0; side < 2; side++)
+		{
+			const double here = chip->samples[index * 2 + side];
+			const double next = chip->samples[(index + 1) * 2 + side];
+			out[side] = here + (next - here) * fraction;
+		}
+	}
+}
+
+/* The frame's mixed samples from the reference sound board, resampled to the output rate. */
+static void play_frame_reference(void)
+{
+	static int16_t mix[OUTPUT_RATE / 60 * 2];
+	size_t made = 0, count = 0;
+	const int16_t *samples;
+
+	game_sound_end_frame(s32_board.cycles);
+	samples = game_sound_frame_mix(&count);
+	keep16(&mixed, samples, count);
+	while (made < (size_t)(output_rate / 60))
+	{
+		double value[2];
+
+		sample_at_hold(&mixed, mixed.position, value);
+		for (int side = 0; side < 2; side++)
+		{
+			const int sample = (int)(value[side] > 32767 ? 32767 : (value[side] < -32768 ? -32768 : value[side]));
+			mix[made * 2 + side] = (int16_t)sample;
+			if (sample > audio_peak) audio_peak = sample;
+			if (-sample > audio_peak) audio_peak = -sample;
+		}
+		mixed.position += mixed.step;
+		made++;
+	}
+	drop_used(&mixed);
+	if (sound_raw)
+		fwrite(mix, sizeof(int16_t), made * 2, sound_raw);
+	if (audio && SDL_GetQueuedAudioSize(audio) < (Uint32)(output_rate / 60 * 4 * QUEUE_FRAMES_MAX))
+		SDL_QueueAudio(audio, mix, (Uint32)(made * 2 * sizeof(int16_t)));
+	if (getenv("GA2_AUDIO_DEBUG") && s32_board.frame % 60 == 0)
+	{
+		fprintf(stderr, "audio: frame %llu, %zu samples, peak %d, queued %u bytes\n",
+			(unsigned long long)s32_board.frame, made, audio_peak,
+			audio ? (unsigned)SDL_GetQueuedAudioSize(audio) : 0);
+		audio_peak = 0;
+	}
+}
+#endif
+
 static void play_frame(void)
 {
+#ifdef GA2_SOUND_REFERENCE
+	play_frame_reference();
+#else
 #ifdef GA2_SOUND
-	static int16_t mix[OUTPUT_RATE / 20 * 2];
+	static int16_t mix[192000 / 60 * 2];
 	size_t made = 0;
 
 	sound_chips_end_frame(s32_board.cycles);
@@ -390,7 +486,7 @@ static void play_frame(void)
 		const int32_t *samples = sound_chips_frame_samples(chip, &count);
 		keep(&chips[chip], samples, count);
 	}
-	while (made < OUTPUT_RATE / 20)
+	while (made < (size_t)(output_rate / 60))
 	{
 		double fm0[2], fm1[2], pcm[2];
 
@@ -403,7 +499,10 @@ static void play_frame(void)
 		for (int side = 0; side < 2; side++)
 		{
 			const double value = 0.30 * (fm0[side] + fm1[side]) + 0.40 * pcm[side];
-			mix[made * 2 + side] = (int16_t)(value > 32767 ? 32767 : (value < -32768 ? -32768 : value));
+			const int sample = (int)(value > 32767 ? 32767 : (value < -32768 ? -32768 : value));
+			mix[made * 2 + side] = (int16_t)sample;
+			if (sample > audio_peak) audio_peak = sample;
+			if (-sample > audio_peak) audio_peak = -sample;
 		}
 		for (int chip = 0; chip < 3; chip++)
 			chips[chip].position += chips[chip].step;
@@ -411,8 +510,16 @@ static void play_frame(void)
 	}
 	for (int chip = 0; chip < 3; chip++)
 		drop_used(&chips[chip]);
-	if (audio && SDL_GetQueuedAudioSize(audio) < (Uint32)(OUTPUT_RATE / 60 * 4 * QUEUE_FRAMES_MAX))
+	if (audio && SDL_GetQueuedAudioSize(audio) < (Uint32)(output_rate / 60 * 4 * QUEUE_FRAMES_MAX))
 		SDL_QueueAudio(audio, mix, (Uint32)(made * 2 * sizeof(int16_t)));
+	if (getenv("GA2_AUDIO_DEBUG") && s32_board.frame % 60 == 0)
+	{
+		fprintf(stderr, "audio: frame %llu, %zu samples, peak %d, queued %u bytes\n",
+			(unsigned long long)s32_board.frame, made, audio_peak,
+			audio ? (unsigned)SDL_GetQueuedAudioSize(audio) : 0);
+		audio_peak = 0;
+	}
+#endif
 #endif
 }
 
@@ -514,6 +621,40 @@ static bool load_rom(const char *base, char *path, size_t size)
 	return false;
 }
 
+static SDL_AudioDeviceID open_audio(const SDL_AudioSpec *wanted)
+{
+	static const char *drivers[] = { NULL, "pulseaudio", "pipewire", "alsa" };
+	SDL_AudioSpec obtained;
+
+	fprintf(stderr, "audio: %d output device(s)\n", SDL_GetNumAudioDevices(0));
+	for (size_t index = 0; index < sizeof(drivers) / sizeof(drivers[0]); index++)
+	{
+		SDL_AudioDeviceID device;
+
+		if (drivers[index])
+		{
+			SDL_setenv("SDL_AUDIODRIVER", drivers[index], 1);
+			SDL_QuitSubSystem(SDL_INIT_AUDIO);
+			if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+				continue;
+		}
+		SDL_zero(obtained);
+		device = SDL_OpenAudioDevice(NULL, 0, wanted, &obtained,
+			SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+		if (device)
+		{
+			output_rate = obtained.freq > 0 ? obtained.freq : OUTPUT_RATE;
+			fprintf(stderr, "audio: %s, %d Hz, %d channels, %d samples\n",
+				SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "unknown",
+				obtained.freq, obtained.channels, obtained.samples);
+			return device;
+		}
+		fprintf(stderr, "audio: %s failed: %s\n", drivers[index] ? drivers[index] : "default", SDL_GetError());
+	}
+	fprintf(stderr, "audio: disabled (no working SDL audio device)\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	SDL_AudioSpec wanted;
@@ -569,13 +710,13 @@ int main(int argc, char **argv)
 	wanted.format = AUDIO_S16SYS;
 	wanted.channels = 2;
 	wanted.samples = 1024;
-	audio = SDL_OpenAudioDevice(NULL, 0, &wanted, NULL, 0);
-#ifdef GA2_SOUND
+	audio = open_audio(&wanted);
+#if defined(GA2_SOUND) || defined(GA2_SOUND_REFERENCE)
 	if (audio)
 		SDL_PauseAudioDevice(audio, 0);
 #endif
-	chips[0].step = chips[1].step = FM_RATE / OUTPUT_RATE;
-	chips[2].step = PCM_RATE / OUTPUT_RATE;
+	chips[0].step = chips[1].step = FM_RATE / output_rate;
+	chips[2].step = PCM_RATE / output_rate;
 
 	s32_board.irq_changed = on_irq_changed;
 	s32_board.controls_update = on_controls_update;
@@ -586,21 +727,35 @@ int main(int argc, char **argv)
 	s32_board.frame_shown = on_frame_shown;
 	video_sprites_due = s32_board.sprites_due;
 	s32_board.sprites_due = on_sprites_due;
-#ifdef GA2_SOUND
+	s32_init(game_program);
+#ifdef GA2_SOUND_REFERENCE
+	game_sound_attach();
+	mixed.step = (double)game_sound_rate() / output_rate;
+#elif defined(GA2_SOUND)
 	sound_chips_attach();
 	sound_cpu_attach();
 #endif
-	s32_init(game_program);
 	if (game_eeprom_valid)
 		memcpy(s32_board.eeprom.data, game_eeprom, sizeof(game_eeprom));
 	load_eeprom();
 	program_reset();
 	next_frame = SDL_GetPerformanceCounter();
+#ifdef GA2_SOUND_REFERENCE
+	{
+		const char *raw_path = getenv("GA2_SOUND_RAW");
+		if (raw_path)
+			sound_raw = fopen(raw_path, "wb");
+	}
+#endif
 
 	if (!setjmp(finished))
 		program_run();
 
 	save_eeprom();
+#ifdef GA2_SOUND_REFERENCE
+	if (sound_raw)
+		fclose(sound_raw);
+#endif
 	if (audio)
 		SDL_CloseAudioDevice(audio);
 	SDL_Quit();

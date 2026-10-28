@@ -37,10 +37,11 @@ fi
 if [ ! -f "$ROOT/src/sound/main.c" ]; then
     python3 tools/decompile_sound.py
 fi
+python3 tools/fix_sound_dispatch.py
 
 say "configure and build"
 python3 tools/write_cmake.py
-cmake -S . -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DGA2_REFERENCE_TOOLS=OFF
+cmake -S . -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DGA2_REFERENCE_TOOLS=ON -DGA2_SOUND_REFERENCE=ON
 cmake --build "$BUILD" --target GoldenAxe2 ga2_headless -j "$(nproc)"
 
 say "AppDir"

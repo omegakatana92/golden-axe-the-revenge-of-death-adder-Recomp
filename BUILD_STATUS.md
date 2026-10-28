@@ -54,9 +54,14 @@ with the supplied ROM copied to `GoldenAxe2-Recomp\rom\ga2.zip`.
 
 ## Remaining issues
 
-1. **Sound command dispatchers** (`sound_0473`, `sound_1094`): the decompiled C does not reproduce the
-   pushed continuation after a table handler returns; sound state diverges from frame 24. This is the
-   highest-priority remaining defect. It needs a Z80 return-address/continuation model in the decompiler.
+1. **Sound fidelity** (`sound_0473`, `sound_1094`): the native decompiled C returned after one table
+   handler and left the game silent. `tools/fix_sound_dispatch.py` restores the pushed continuation and
+   the native backend produces sustained audio, but per-frame sample/state hashes still differ from MAME
+   (235 of 300). The window/release build therefore uses the **reference sound board** by default
+   (`GA2_SOUND_REFERENCE=ON`, MAME's Z80 + RF5C68 + ymfm YM3438), which is emulated but reference-accurate
+   in level and content. It produces exactly 800 output samples per 60 Hz frame at 48 kHz (verified:
+   2,880,000 bytes for 900 frames). The proper long-term fix is a Z80 return-address model in the
+   decompiler; the native backend remains selectable with `-DGA2_SOUND_REFERENCE=OFF`.
 2. **State hash transients**: 172/3,000 frames differ in non-visible state. Investigate the first
    divergence (frame 24, off-screen video RAM) if bit-exact state is required.
 3. **Full-game coverage**: stages after the first, bosses, ending and 4-player sessions are not yet

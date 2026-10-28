@@ -54,15 +54,39 @@ video diffs=0 of 3000
 
 `s32ref --sound-hashes --sound-timing build/sound/timing.txt` and
 `ga2_headless --sound-hashes` both run the Z80 with the same per-block time. The decompiled driver starts,
-runs its init and main loop, and the first 23 frames' sample and state hashes match. From frame 24 the
-sample hash differs; the board's shared RAM shows different driver variables (`E000-E008`, `E060-E061`).
+runs its init and main loop, and the first 23 frames' sample and state hashes match.
 
-The cause is known: the sound program's two command dispatchers (`sound_0473`, `sound_1094`) push a
-continuation address and jump through a table whose handlers return to it. The decompiler's CFG cannot see
-a return address that only the Z80 stack holds, so those two functions' generated C does not update the
-command-stream pointer the way the original does. All other 73 decompiled functions are emitted normally.
-This is a correctness issue, not a crash: the game runs and audio is produced. It is listed in
-`COMPATIBILITY.md` and `BUILD_STATUS.md` as the remaining sound work.
+The two command dispatchers (`sound_0473`, `sound_1094`) push a continuation address and jump through a
+table whose handlers return to it. The decompiler's CFG cannot see a return address that only the Z80 stack
+holds, so the raw generated C returned after one handler and never advanced the command stream; the game
+was effectively silent. `tools/fix_sound_dispatch.py` rewrites only those two generated functions to run
+the original continuation (increment DE, store the stream pointer for `sound_0473`, loop), matching the
+Z80's pushed return path.
+
+With the fix, the native game produces sustained audio in gameplay. Measured through SDL's disk audio
+driver for a 900-frame autoplay run: **peak 4270, RMS 540** over 13.5 seconds (the first 900 frames); the
+reference play run measures peak 5708 / RMS 986 over the same music. The sound board's per-frame sample and
+state hashes still differ on 235 of 300 frames, so the remaining issue is command/timing fidelity, not
+silence. This is documented in `COMPATIBILITY.md`.
+
+### Window/release sound backend (sound fix)
+
+Because the native Z80 command/timing fidelity is still incomplete, the window and release builds now
+use the **reference sound board** by default (`GA2_SOUND_REFERENCE=ON`): the original Z80 program on
+MAME's Z80 core, MAME's RF5C68 and ymfm's YM3438, through `runtime/src/sound_reference.cpp`. It is
+emulated, and documented as such.
+
+Verified with SDL's dummy drivers and the same 900-frame autoplay sequence:
+
+```text
+audio: dummy, 48000 Hz, 2 channels, 1024 samples
+raw:   2,880,000 bytes = 720,000 stereo frames = 15.0 s = 800 samples/frame
+peak:  5666    RMS: 1108.6
+reference (s32ref --sound-wav, same script): peak 5947, RMS 1128.0
+```
+
+The remaining sample-level difference comes from the V60 translation's cycle timing, not the sound
+board. The native decompiled Z80 backend remains selectable with `-DGA2_SOUND_REFERENCE=OFF`.
 
 ## Startup and packaging
 

@@ -1,9 +1,14 @@
 # Golden Axe: The Revenge of Death Adder — native recompilation
 
 A native Windows / Linux port of Sega's 1992 arcade game **Golden Axe: The Revenge of Death Adder**
-(World, Rev B, MAME set `ga2`, Sega System 32). The V60 program is translated ahead of time into C, the
-Z80 sound driver is decompiled into C, and a System 32 board model, the video hardware and the
-YM3438/RF5C68 sound chips run natively. No emulator, MAME, Wine or Proton process is used at runtime.
+(World, Rev B, MAME set `ga2`, Sega System 32). The V60 program is translated ahead of time into C,
+and a System 32 board model, the video hardware and the YM3438/RF5C68 sound chips run in C.
+
+The **main V60 game is native**. The **sound CPU is the one emulated component in the window/release
+build**: the original Z80 program runs on MAME's Z80 core with MAME's RF5C68 and ymfm's YM3438 until the
+native decompiled Z80 driver's command/timing fidelity is fixed. The native decompiled Z80 backend is
+still in `src/sound/` and can be selected with `-DGA2_SOUND_REFERENCE=OFF`. See
+[COMPATIBILITY.md](COMPATIBILITY.md).
 
 This is an independent reverse-engineering project. It is not affiliated with, endorsed by or sponsored by
 Sega. *Golden Axe* is a trademark of Sega. No ROM or extracted game asset is included in this repository or
@@ -20,9 +25,12 @@ in its source releases.
 - The V25 protection MCU is modelled, not emulated: its reset routine only fills the 4 KB DPRAM with a
   sprite table and a wake-up string, then halts. The port performs the same initialisation from the
   player's MCU ROM (`docs/PROTECTION.md`).
-- Sound: the Z80 program is decompiled to C (`src/sound/`), running on the board's timing with the
-  YM3438 and RF5C68 libraries. The driver runs and produces audio; a small number of command-dispatch
-  paths still differ from MAME's Z80 state and are listed in [COMPATIBILITY.md](COMPATIBILITY.md).
+- Sound: two backends. The window/release build uses the reference sound board — the original Z80
+  program on MAME's Z80 core, MAME's RF5C68 and ymfm's YM3438 — and produces 800 output samples per
+  60 Hz frame at 48 kHz. It is emulated, documented, and selected by `GA2_SOUND_REFERENCE` (default ON).
+  The native decompiled Z80 driver (`src/sound/`, `tools/fix_sound_dispatch.py`) remains available with
+  `-DGA2_SOUND_REFERENCE=OFF`; its command/timing fidelity is still being fixed. See
+  [COMPATIBILITY.md](COMPATIBILITY.md).
 - Keyboard and gamepad input for four players, fullscreen/windowed presentation with the original 4:3
   aspect ratio.
 - The EEPROM (settings/bookkeeping) is saved beside the executable on Windows or in the user folder on
@@ -117,7 +125,7 @@ runtime/              System 32 board model, video, sound board and chips (BSD-3
 ports/sdl2/           the window, input and audio port
 ports/headless/       headless runner used for reference comparisons
 tools/core/           arcade-decomp, the shared V60/Z80 decompiler and analysis (BSD-3-Clause)
-tools/reference/      MAME V60/Z80/video/RF5C68 and ymfm, reference tools only (BSD-3-Clause)
+tools/reference/      MAME V60/Z80/video/RF5C68 and ymfm: reference tools and the window sound fallback (BSD-3-Clause)
 tools/ga2_rom.py      the 'ga2' set, its checksums and the board's region layout
 tools/recompile.py    V60 -> C translation scaffold
 tools/decompile_sound.py  Z80 sound driver -> C (src/sound/)

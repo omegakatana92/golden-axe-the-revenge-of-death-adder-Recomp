@@ -5,7 +5,19 @@
 # set is not included: put ga2.zip beside the AppImage, in ./rom beside it, or in
 # ~/.local/share/GoldenAxe2/. GA2_ROM may also point at the folder that holds it.
 HERE=$(dirname "$(readlink -f "$0")")
-export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# Prefer the host's SDL2 when it has one: SteamOS ships a recent SDL2 with a working PipeWire audio
+# backend, while the AppImage's fallback copy is Ubuntu 22.04's 2.0.20. If no system SDL2 is found,
+# use the bundled copy and prefer its PulseAudio backend (2.0.20's experimental PipeWire path is not
+# reliable inside an AppImage).
+if ldconfig -p 2>/dev/null | grep -q 'libSDL2-2.0.so.0'; then
+    :
+else
+    export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    if [ -z "$SDL_AUDIODRIVER" ]; then
+        export SDL_AUDIODRIVER=pulseaudio
+    fi
+fi
 
 if [ -z "$GA2_ROM" ]; then
     APPIMAGE_DIR=$(dirname "$(readlink -f "$APPIMAGE" 2>/dev/null || echo "$0")")

@@ -29,8 +29,9 @@ this project are under PolyForm Noncommercial 1.0.0.
 ## MAME
 
 `tools/reference/mame/`, `tools/reference/video/` and `tools/reference/sound/` contain files derived from
-MAME (BSD-3-Clause), used only by the reference tools (`s32ref`) to validate the native port. They are not
-linked into `GoldenAxe2.exe` or the AppImage.
+MAME (BSD-3-Clause). They are used by the reference tools (`s32ref`) and, as a documented fallback, by
+the window/release sound board (`runtime/src/sound_reference.cpp`, `GA2_SOUND_REFERENCE=ON`) until the
+native Z80 driver's command/timing fidelity is fixed. The main V60 game is native.
 
 - License text: `LICENSE-MAME-BSD-3-Clause.txt`.
 - Behaviour references: `sega/segas32.cpp`, `sega/segas32_v.cpp`, `sega/segas32_m.cpp`,
@@ -38,7 +39,8 @@ linked into `GoldenAxe2.exe` or the AppImage.
 
 ## ymfm
 
-`tools/reference/ymfm/` is a copy of ymfm (BSD-3-Clause), used only by the reference sound board.
+`tools/reference/ymfm/` is a copy of ymfm (BSD-3-Clause), used by the reference sound board and by the
+window/release sound fallback (`GA2_SOUND_REFERENCE=ON`).
 
 - License text: `LICENSE-ymfm-BSD-3-Clause.txt`.
 

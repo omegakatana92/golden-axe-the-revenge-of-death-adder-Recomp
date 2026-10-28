@@ -26,6 +26,7 @@
 #include "sound/chips.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define INTERRUPT_CYCLES 13
 
@@ -140,6 +141,19 @@ void sound_invalid_jump(uint32_t address)
 
 static void on_time_passes(uint64_t until)
 {
+	static int debug = -1;
+	if (debug < 0) debug = getenv("GA2_AUDIO_DEBUG") != NULL;
+	if (debug)
+	{
+		static int last_held = -1, last_running = -1;
+		if (z80.held != last_held || z80.running != last_running)
+		{
+			fprintf(stderr, "sound: time_passes held=%d running=%d clock=%llu until=%llu\n",
+				z80.held, z80.running, (unsigned long long)z80.clock, (unsigned long long)until);
+			last_held = z80.held;
+			last_running = z80.running;
+		}
+	}
 	if (z80.held)
 	{
 		sound_chips_timers_due(until);
@@ -164,6 +178,8 @@ static void on_sound_irq(bool asserted, uint8_t vector)
 
 static void on_sound_reset(bool held)
 {
+	if (getenv("GA2_AUDIO_DEBUG"))
+		fprintf(stderr, "sound: reset line held=%d\n", held);
 	if (held)
 	{
 		z80.running = false;

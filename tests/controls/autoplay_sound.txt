@@ -1,0 +1,17 @@
+# Mirrors the GA2_AUTOPLAY sequence in ports/sdl2/main.c (frames 0-899).
+60 press coin1 1
+90 press start1 1
+150 press p1_button1 8
+300 hold p1_right
+400 press p1_button1 1
+420 release p1_right
+490 press p1_button1 1
+540 hold p1_right
+580 press p1_button1 1
+660 release p1_right
+670 press p1_button1 1
+760 press p1_button1 1
+780 hold p1_right
+900 release p1_right
+900 end
+
