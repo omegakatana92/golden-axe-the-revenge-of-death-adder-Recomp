@@ -22,8 +22,8 @@ with the supplied ROM copied to `GoldenAxe2-Recomp\rom\ga2.zip`.
   video, sound, memory map, region layout, no parent/BIOS, V25 dependency.
 - **Phase 3 — project.** Runtime, ports, reference tools, decompiler core, game ROM module, symbol files,
   build scripts, packaging, docs and tests.
-- **Phase 4 — translation.** V60 reset/vector analysis (SBR `0x100000`), 3,000-frame trace, 1,284
-  translated functions / 59,522 instruction instances, no untranslated instructions. Added the V60 string
+- **Phase 4 — translation.** V60 reset/vector analysis (SBR `0x100000`), 3,000-frame trace, 1,988
+  translated functions / 132,357 instruction instances, no untranslated instructions. Added the V60 string
   instructions, `clrtlb`, push/return continuations and negative-index branch tables to the core.
 - **Phase 5 — graphics/audio.** System 32 video is frame-exact against MAME on 3,000 frames. The Z80
   driver is decompiled and runs; the two command dispatchers remain a known fidelity issue.
